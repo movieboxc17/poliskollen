@@ -2,7 +2,8 @@
 <html lang="sv" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- user-scalable=no added to prevent zooming -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Poliskollen - Händelser i realtid</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -16,18 +17,24 @@
                             blue: '#0057b7',
                             dark: '#002e62'
                         }
+                    },
+                    borderRadius: {
+                        '3xl': '24px',
+                        '4xl': '32px'
                     }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
             transition: background-color 0.3s ease;
+            /* Disable pull-to-refresh on mobile if needed, though we use a refresh button */
+            overscroll-behavior-y: contain;
         }
 
         .glass {
@@ -43,11 +50,11 @@
         }
 
         .event-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
         }
 
         .event-card:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
 
         .bottom-nav {
@@ -64,13 +71,18 @@
         .modal-animate {
             animation: modalShow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
+        /* Prevent text selection on UI elements */
+        .nav-item, button, .chip {
+            user-select: none;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
 
     <!-- Welcome Popup (Modal) -->
     <div id="welcome-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] p-8 shadow-2xl modal-animate text-center">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-4xl p-8 shadow-2xl modal-animate text-center">
             <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 text-police-blue dark:text-blue-400 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <i class="ri-shield-user-fill text-4xl"></i>
             </div>
@@ -98,11 +110,11 @@
             </div>
             
             <div class="flex items-center gap-1">
-                <button id="theme-toggle" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-600 dark:text-slate-400">
+                <button id="theme-toggle" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-600 dark:text-slate-400" aria-label="Byt tema">
                     <i class="ri-moon-line text-xl dark:hidden"></i>
                     <i class="ri-sun-line text-xl hidden dark:block text-yellow-500"></i>
                 </button>
-                <button id="refresh-btn" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors group">
+                <button id="refresh-btn" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors group" aria-label="Uppdatera">
                     <i class="ri-refresh-line text-xl text-slate-600 dark:text-slate-400"></i>
                 </button>
             </div>
@@ -111,9 +123,9 @@
         <!-- Search & Quick Filters -->
         <div class="max-w-2xl mx-auto px-4 pb-3">
             <div class="relative mb-3">
-                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <i class="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="search-input" placeholder="Sök händelse eller plats..." 
-                    class="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-2xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-police-blue outline-none transition-all placeholder:text-slate-400">
+                    class="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-2xl py-3.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-police-blue outline-none transition-all placeholder:text-slate-400">
             </div>
             <div id="location-chips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 <!-- Location chips injected here -->
@@ -125,10 +137,10 @@
     <main class="max-w-2xl mx-auto px-4 pt-44 pb-28">
         
         <!-- Status Bar -->
-        <div id="status-bar" class="mb-4 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
-            <span id="result-count">Hämtar data...</span>
-            <div class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+        <div id="status-bar" class="mb-5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+            <span id="result-count" class="bg-slate-200/50 dark:bg-slate-900 px-3 py-1 rounded-full">Hämtar data...</span>
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                 <span id="last-updated">Uppdaterad: --:--</span>
             </div>
         </div>
@@ -137,8 +149,9 @@
         <div id="events-list" class="space-y-4">
             <!-- Skeleton Loader -->
             <div class="animate-pulse space-y-4">
-                <div class="h-36 bg-slate-200 dark:bg-slate-900 rounded-3xl"></div>
-                <div class="h-36 bg-slate-200 dark:bg-slate-900 rounded-3xl"></div>
+                <div class="h-40 bg-slate-200 dark:bg-slate-900 rounded-4xl"></div>
+                <div class="h-40 bg-slate-200 dark:bg-slate-900 rounded-4xl"></div>
+                <div class="h-40 bg-slate-200 dark:bg-slate-900 rounded-4xl"></div>
             </div>
         </div>
     </main>
@@ -146,15 +159,15 @@
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 glass border-t border-slate-200 dark:border-slate-800 bottom-nav z-50">
         <div class="max-w-2xl mx-auto px-8 py-3 flex justify-between items-center">
-            <button onclick="switchTab('feed')" class="nav-item flex flex-col items-center gap-1 text-police-blue dark:text-blue-400" data-tab="feed">
+            <button onclick="switchTab('feed')" class="nav-item flex flex-col items-center gap-1 text-police-blue dark:text-blue-400 transition-all active:scale-90" data-tab="feed">
                 <i class="ri-file-list-2-fill text-2xl"></i>
                 <span class="text-[10px] font-bold uppercase tracking-widest">Flöde</span>
             </button>
-            <button onclick="switchTab('locations')" class="nav-item flex flex-col items-center gap-1 text-slate-400" data-tab="locations">
+            <button onclick="switchTab('locations')" class="nav-item flex flex-col items-center gap-1 text-slate-400 transition-all active:scale-90" data-tab="locations">
                 <i class="ri-map-pin-2-line text-2xl"></i>
                 <span class="text-[10px] font-bold uppercase tracking-widest">Orter</span>
             </button>
-            <button onclick="switchTab('settings')" class="nav-item flex flex-col items-center gap-1 text-slate-400" data-tab="settings">
+            <button onclick="switchTab('settings')" class="nav-item flex flex-col items-center gap-1 text-slate-400 transition-all active:scale-90" data-tab="settings">
                 <i class="ri-equalizer-line text-2xl"></i>
                 <span class="text-[10px] font-bold uppercase tracking-widest">Inställn.</span>
             </button>
@@ -167,7 +180,7 @@
             <div class="flex justify-between items-center mb-10 sticky top-0 bg-white dark:bg-slate-950 py-2 z-10">
                 <h2 id="overlay-title" class="text-2xl font-black">Inställningar</h2>
                 <button onclick="closeOverlay()" class="p-3 bg-slate-100 dark:bg-slate-900 rounded-full active:scale-90 transition-transform">
-                    <i class="ri-close-line text-xl"></i>
+                    <i class="ri-close-line text-xl text-slate-600 dark:text-slate-300"></i>
                 </button>
             </div>
 
@@ -183,12 +196,22 @@
                     <form id="add-location-form" class="mt-6">
                         <div class="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl">
                             <input type="text" id="new-location-input" placeholder="T.ex. Malmö..." 
-                                class="flex-1 bg-transparent border-none px-4 py-2.5 text-sm outline-none placeholder:text-slate-400">
+                                class="flex-1 bg-transparent border-none px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 dark:text-white">
                             <button type="submit" class="bg-police-blue text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
                                 Lägg till
                             </button>
                         </div>
+                        <p class="text-[10px] text-slate-400 mt-3 px-1 italic">
+                            Data sparas lokalt på din enhet.
+                        </p>
                     </form>
+                </section>
+                
+                <section class="pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Om Tjänsten</h3>
+                    <div class="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                        Poliskollen är en oberoende tjänst som aggregerar information från svenska polisens öppna data. Vi ansvarar inte för korrektheten i polisens rapporter.
+                    </div>
                 </section>
             </div>
         </div>
@@ -198,7 +221,7 @@
         // State Management
         let state = {
             activeTab: 'feed',
-            locations: JSON.parse(localStorage.getItem('savedLocations')) || ['Stockholm', 'Uppsala', 'Knivsta'],
+            locations: JSON.parse(localStorage.getItem('savedLocations')) || ['Stockholm', 'Uppsala', 'Göteborg'],
             events: [],
             searchTerm: '',
             loading: false,
@@ -224,10 +247,13 @@
             // App Logic
             document.getElementById('refresh-btn').addEventListener('click', fetchEvents);
             document.getElementById('theme-toggle').addEventListener('click', toggleDarkMode);
-            document.getElementById('search-input').addEventListener('input', (e) => {
+            
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', (e) => {
                 state.searchTerm = e.target.value.toLowerCase();
                 renderEvents();
             });
+
             document.getElementById('add-location-form').addEventListener('submit', handleAddLocation);
         }
 
@@ -243,14 +269,20 @@
             refreshIcon.classList.add('animate-spin');
             
             try {
+                // Polisen API limits or empty responses handling
                 const promises = state.locations.map(loc => 
-                    fetch(`${API_BASE}${encodeURIComponent(loc)}`).then(res => res.json()).catch(() => [])
+                    fetch(`${API_BASE}${encodeURIComponent(loc)}`)
+                        .then(res => res.ok ? res.json() : [])
+                        .catch(() => [])
                 );
                 
                 const results = await Promise.all(promises);
                 const allEvents = results.flat();
+                
+                // Remove duplicates by ID
                 const uniqueEvents = Array.from(new Map(allEvents.map(item => [item.id, item])).values());
                 
+                // Sort by date newest first
                 state.events = uniqueEvents.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
                 
                 const now = new Date();
@@ -277,7 +309,14 @@
             document.getElementById('result-count').textContent = `${filtered.length} händelser i flödet`;
 
             if (filtered.length === 0) {
-                list.innerHTML = `<div class="text-center py-24 text-slate-400 font-bold text-sm">Inga resultat hittades</div>`;
+                list.innerHTML = `
+                    <div class="text-center py-20 px-10">
+                        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                            <i class="ri-notification-off-line text-3xl"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-1">Inga händelser hittades</h3>
+                        <p class="text-xs text-slate-400">Prova en annan sökterm eller lägg till fler orter i inställningarna.</p>
+                    </div>`;
                 return;
             }
 
@@ -291,37 +330,38 @@
                 
                 const type = ev.type.toLowerCase();
                 if (type.includes('trafik')) { icon = 'ri-car-fill'; color = 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'; }
-                if (type.includes('brand')) { icon = 'ri-fire-fill'; color = 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'; }
-                if (type.includes('inbrott')) { icon = 'ri-door-lock-fill'; color = 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'; }
-                if (type.includes('våld') || type.includes('rån')) { icon = 'ri-hand-coin-fill'; color = 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'; }
+                else if (type.includes('brand')) { icon = 'ri-fire-fill'; color = 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'; }
+                else if (type.includes('inbrott') || type.includes('stöld')) { icon = 'ri-door-lock-fill'; color = 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'; }
+                else if (type.includes('våld') || type.includes('rån') || type.includes('misshandel')) { icon = 'ri-hand-coin-fill'; color = 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'; }
+                else if (type.includes('narkotika')) { icon = 'ri-capsule-fill'; color = 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'; }
 
                 return `
-                    <div class="event-card bg-white dark:bg-slate-900 p-5 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800">
-                        <div class="flex items-start gap-4">
-                            <div class="shrink-0 w-14 h-14 ${color} rounded-2xl flex flex-col items-center justify-center shadow-inner">
+                    <div class="event-card bg-white dark:bg-slate-900 p-6 rounded-4xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-start gap-5">
+                            <div class="shrink-0 w-14 h-14 ${color} rounded-2xl flex flex-col items-center justify-center shadow-sm">
                                 <i class="${icon} text-2xl"></i>
-                                <span class="text-[9px] font-black uppercase tracking-tighter">${timeStr}</span>
+                                <span class="text-[9px] font-black uppercase tracking-tighter mt-0.5">${timeStr}</span>
                             </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start mb-1.5">
-                                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-[13px] leading-tight pr-2 uppercase">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-[13px] leading-snug pr-4 uppercase truncate">
                                         ${ev.name.split(',')[1] || ev.name}
                                     </h3>
                                     <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-lg uppercase tracking-widest shrink-0">
                                         ${dateStr}
                                     </span>
                                 </div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium leading-relaxed italic">
+                                <p class="text-[13px] text-slate-500 dark:text-slate-400 mb-5 font-medium leading-relaxed italic line-clamp-3">
                                     "${ev.summary}"
                                 </p>
-                                <div class="flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-3">
-                                    <div class="flex items-center gap-1.5 text-police-blue dark:text-blue-400 font-black text-[10px] uppercase tracking-wider">
+                                <div class="flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-4">
+                                    <div class="flex items-center gap-1.5 text-police-blue dark:text-blue-400 font-black text-[10px] uppercase tracking-wider truncate mr-4">
                                         <i class="ri-map-pin-2-fill text-xs"></i>
                                         <span>${ev.location.name}</span>
                                     </div>
                                     <a href="https://polisen.se${ev.url}" 
                                        target="_blank"
-                                       class="bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 px-4 py-1.5 rounded-full uppercase tracking-widest transition-all active:scale-95">
+                                       class="shrink-0 bg-slate-100 dark:bg-slate-800 hover:bg-police-blue hover:text-white dark:hover:bg-blue-600 text-[10px] font-black text-slate-600 dark:text-slate-300 px-5 py-2 rounded-full uppercase tracking-widest transition-all active:scale-95">
                                         Läs mer <i class="ri-arrow-right-up-line ml-0.5"></i>
                                     </a>
                                 </div>
@@ -335,7 +375,7 @@
         function renderLocationChips() {
             const container = document.getElementById('location-chips');
             container.innerHTML = state.locations.map(loc => `
-                <button onclick="setSearch('${loc}')" class="shrink-0 px-5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest active:scale-95 transition-all">
+                <button onclick="setSearch('${loc}')" class="shrink-0 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest active:scale-95 transition-all shadow-sm">
                     ${loc}
                 </button>
             `).join('');
@@ -343,15 +383,18 @@
             document.getElementById('loc-count').textContent = `${state.locations.length}/5`;
             const manageList = document.getElementById('manage-locations');
             manageList.innerHTML = state.locations.map(loc => `
-                <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
                     <span class="font-bold text-slate-700 dark:text-slate-200">${loc}</span>
-                    <button onclick="removeLocation('${loc}')" class="text-rose-500 p-2"><i class="ri-delete-bin-line"></i></button>
+                    <button onclick="removeLocation('${loc}')" class="text-rose-500 bg-rose-50 dark:bg-rose-900/20 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+                        <i class="ri-delete-bin-line text-lg"></i>
+                    </button>
                 </div>
             `).join('');
         }
 
         function setSearch(val) {
-            document.getElementById('search-input').value = val;
+            const input = document.getElementById('search-input');
+            input.value = val;
             state.searchTerm = val.toLowerCase();
             renderEvents();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -383,8 +426,10 @@
                 el.classList.add('text-slate-400');
             });
             const activeNav = document.querySelector(`[data-tab="${tab}"]`);
-            activeNav.classList.add('text-police-blue', 'dark:text-blue-400');
-            activeNav.classList.remove('text-slate-400');
+            if (activeNav) {
+                activeNav.classList.add('text-police-blue', 'dark:text-blue-400');
+                activeNav.classList.remove('text-slate-400');
+            }
 
             if (tab === 'settings' || tab === 'locations') {
                 const overlay = document.getElementById('overlay-container');
@@ -398,8 +443,19 @@
         function closeOverlay() {
             const overlay = document.getElementById('overlay-container');
             overlay.classList.add('translate-y-full');
-            setTimeout(() => overlay.classList.add('hidden'), 300);
-            switchTab('feed');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                // Ensure we visually reset nav bar if user closes overlay via close button
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    if (el.dataset.tab === 'feed') {
+                        el.classList.add('text-police-blue', 'dark:text-blue-400');
+                        el.classList.remove('text-slate-400');
+                    } else {
+                        el.classList.remove('text-police-blue', 'dark:text-blue-400');
+                        el.classList.add('text-slate-400');
+                    }
+                });
+            }, 300);
         }
 
         window.onload = init;
